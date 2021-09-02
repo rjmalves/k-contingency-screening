@@ -665,8 +665,11 @@ function calculate_cfb_changes!(reference_betweenness::SharedArray,
     n, val_e = size(betweenness)
     for idx = 1:val_e
         # Resíduo da betweenness
-        betweenness_delta = betweenness[:, idx] - reference_betweenness
-        temp_array = abs.(betweenness_delta ./ reference_betweenness)
+        temp_array = abs.(betweenness[:, idx] - reference_betweenness)
+        # Subtrai do mínimo
+        temp_array = temp_array .- minimum(temp_array)
+        # Normaliza para uma escala de 0 a 1
+        temp_array = temp_array ./ maximum(temp_array)
         # Armazena a betwenness normalizada
         betweenness_changes[:, idx] = temp_array
     end
@@ -997,7 +1000,7 @@ function iteracao_cfb(g::Graph)
     calculate_cfb_changes!(reference_betweenness,
                            betweenness,
                            betweenness_changes)
-    return betweenness_changes
+    return reference_betweenness, betweenness, betweenness_changes
 end
 
 end
