@@ -929,7 +929,7 @@ iteracao_cfb(g)
 Realiza uma procura pela aresta única cuja remoção promove a
 maior diferença em termos de CFB num grafo  `g`.
 
-Retorna a aresta cuja remoção foi a mais crítica e o DeltaCFB.
+Retorna a aresta cuja remoção foi a mais crítica.
 """
 function iteracao_cfb(g::Graph)
     println("Iniciando...")
@@ -1000,7 +1000,17 @@ function iteracao_cfb(g::Graph)
     calculate_cfb_changes!(reference_betweenness,
                            betweenness,
                            betweenness_changes)
-    return reference_betweenness, betweenness, betweenness_changes
+    # Obtém a remoção mais crítica (com mais nós críticos)
+    most_critical = 0
+    most_critical_edge_idx = 0
+    for e = 1:removable
+        critical_removal = length(findall(betweenness_changes[:, e] .> 0.7))
+        if critical_removal > most_critical
+            most_critical = critical_removal
+            most_critical_edge_idx  = e
+        end
+    end
+    return valid_edgs[most_critical_edge_idx], most_critical, betweenness_changes
 end
 
 end

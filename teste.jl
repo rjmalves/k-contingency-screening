@@ -4,7 +4,7 @@ using Main.CFB
 
 g = Graph(loadgraph("t11.txt", "Grafo", EdgeListFormat()))
 
-r, b, m = iteracao_cfb(g)
+e, t, m = iteracao_cfb(g)
 
 
 using GraphPlot
