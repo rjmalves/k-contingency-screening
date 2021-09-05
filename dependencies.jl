@@ -8,9 +8,10 @@ dependencies = [
     "Printf",
     "LinearAlgebra",
     "Combinatorics",
-    "Itertools",
+    "IterTools",
     "ArgParse",
-    "StatsBase"
+    "StatsBase",
+    "GraphPlot"
 ]
 
 Pkg.add(dependencies)

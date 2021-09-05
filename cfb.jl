@@ -7,6 +7,7 @@ using StatsBase, Combinatorics
 export cfb_exaus
 export cfb_de
 export iteracao_cfb
+export cfb_guloso
 
 
 function edit_adjacencies!(adjacencies::SharedArray,
@@ -677,253 +678,6 @@ end
 
 
 """
-cfb_guloso(g, N)
-
-Calcula a métrica para uma grafo `g`,
-tomando remoções de `N` arestas por vez.
-Foi definida pensando em redes grandes,
-então possui parâmetros internos para limitar a
-alocação de memória e realizar em loops o que
-não for possível de ser realizado simultâneamente.
-Sua implementação envolve o uso de funções
-de computação paralela, mas a função não lida com a
-criação de processos. Estes devem ser iniciados previamente.
-
-### Parâmetros opcionais
-- `filename="current_flow"`: Parte do nome do arquivo `.txt`
-que irá receber as informações finais.
-"""
-function cfb_guloso(g::Graph,
-                    N::Int64,
-                    filename="result")
-    println("Iniciando...")
-    # Número de vértices
-    n = nv(g)
-    # Numero temporario de arestas
-    m = ne(g)
-    # ---- Variáveis importantes ----
-    # Número total de remoções válidas
-    total_removables = 0
-    # Espaço de memória para a adjacência
-    reference_adjacency = SharedArray{Bool}(n, n, 1)
-    # Matriz de adjacência do grafo original
-    reference_adjacency[:, :, 1] = adjacency_matrix(g)
-    # Espaço de memória para a betweenness original
-    reference_betweenness = SharedArray{Float64}(n, 1)
-    # Cálculo da betweenness original
-    current_flow_betweenness!(reference_adjacency,
-                              reference_betweenness,
-                              [1, 1])
-    # Arestas do grafo original
-    edgs = [[convert(UInt16, src(e)),
-             convert(UInt16, dst(e))] for e = edges(g)]
-
-    # Listas de 1 aresta 
-    edgs_temp_singles =[e for e = subsets(edgs, 1)]
-    # Memória compartilhada para as matrizes de adjacência
-    adjacencies_temp = SharedArray{Bool}(n, n, m)
-    tuples_to_remove_temp = SharedArray{Bool}(m)
-    # Execução paralela da edição da matriz de adjacência para cada remoção
-    println("Iniciando paralelismo")
-    @sync begin
-        for p = procs(adjacencies_temp)
-            @async remotecall_wait(s_edit_adjacencies!,
-                                   p,
-                                   adjacencies_temp,
-                                   reference_adjacency,
-                                   edgs_temp_singles,
-                                   1)
-        end
-    end
-    # Execução paralela da verificação de conectividade para
-    # cada matriz de adjacência
-    println("Iniciando paralelismo")
-    @sync begin
-        for p = procs(tuples_to_remove_temp)
-            @async remotecall_wait(s_verify_connectivity!,
-                                   p,
-                                   adjacencies_temp,
-                                   tuples_to_remove_temp)
-        end
-    end
-    # Considera apenas as matrizes dos grafos conexos
-    valid_edgs = []
-    for i in 1:m
-        if tuples_to_remove_temp[i] == true
-            append!(valid_edgs, [edgs[i]])
-        end
-    end
-    # Coleta lixo para limpar RAM
-    edgs_temp_singles = 0
-    adjacencies_temp = 0
-    tuples_to_remove_temp = 0
-    GC.gc()
-    # ---- Parâmetros utilizados na função ----
-     # Número de arestas
-    m = length(valid_edgs)
-    # Número de grupos de N arestas existentes (binomial m N)
-    tuples = multinomial(N, m - N)
-    # Listas de N arestas do grafo original
-    edg_tuples = [e for e = subsets(valid_edgs, N)]
-    # Listas com os índices das arestas de edg_tuples
-    edg_tuples_indices = [convert(Array{UInt16}, i)
-                          for i = subsets(1:m, N)]
-    # Matrizes
-    noncritical_matrix = SharedArray{Int32}(m, n)
-    medium_matrix = SharedArray{Int32}(m, n)
-    critical_matrix = SharedArray{Int32}(m, n)
-
-    for chunk_iter = chunk_list
-        println(string("Chunk ", chunk_iter))
-        # Para armazenar as arestas cuja remoção foi válida
-        edg_valid_removals = []
-        # Verifica o limite superior da iteração atual
-        ul = min(chunk_iter + delta - 1, tuples)
-        # Calcula o delta real
-        iter_delta = min(delta, ul - chunk_iter + 1)
-        # Memória compartilhada para as matrizes de adjacência
-        adjacencies = SharedArray{Bool}(n, n, iter_delta)
-        # Vetor de bool para dizer quando uma remoção é válida (conexa)
-        tuples_to_remove = SharedArray{Bool}(iter_delta)
-        # Acessa as arestas necessárias para a iteração
-        edg_tuples_chunk = edg_tuples[chunk_iter:ul]
-        edg_tuples_chunk_indices = edg_tuples_indices[chunk_iter:ul]
-
-        # Execução paralela da edição da matriz de adjacência para cada remoção
-        println("Iniciando paralelismo")
-        @sync begin
-            for p = procs(adjacencies)
-                @async remotecall_wait(s_edit_adjacencies!,
-                                       p,
-                                       adjacencies,
-                                       reference_adjacency,
-                                       edg_tuples_chunk,
-                                       N)
-            end
-        end
-        # Execução paralela da verificação de conectividade
-        # para cada matriz de adjacência
-        println("Iniciando paralelismo")
-        @sync begin
-            for p = procs(tuples_to_remove)
-                @async remotecall_wait(s_verify_connectivity!,
-                                       p,
-                                       adjacencies,
-                                       tuples_to_remove)
-            end
-        end
-        # Contagem de quantas remoções foram válidas
-        # (mantiveram o grafo conexo)
-        removable = 0
-        for i = 1:iter_delta
-            if tuples_to_remove[i]
-                removable += 1
-                append!(edg_valid_removals,
-                        [edg_tuples_chunk_indices[i]])
-            end
-        end
-        total_removables += removable
-        # Alocação de memória para as matrizes de adjacência
-        # válidas e as betweenness
-        final_adjacencies = SharedArray{Bool}(n, n, removable)
-        betweenness = SharedArray{Float64}(n, removable)
-        # Passagem das matrizes de adjacência válidas
-        counter = 1
-        for e = 1:iter_delta
-            if tuples_to_remove[e]
-                final_adjacencies[:, :, counter] = adjacencies[:, :, e]
-                counter += 1
-            end
-        end
-        # Execução paralela do cálculo das betweenness
-        println("Iniciando paralelismo")
-        @sync begin
-            for p = procs(betweenness)
-                @async remotecall_wait(s_current_flow_betweenness!,
-                                       p,
-                                       final_adjacencies,
-                                       betweenness)
-            end
-        end
-        # Calcula a métrica e define os nós críticos
-        noncritical_nodes = SharedArray{UInt16}(n, removable)
-        medium_nodes = SharedArray{UInt16}(n, removable)
-        critical_nodes = SharedArray{UInt16}(n, removable)
-        println("Iniciando paralelismo")
-        @sync begin
-            for p = procs(critical_nodes)
-                @async remotecall_wait(s_define_critical_nodes!,
-                                       p,
-                                       noncritical_nodes,
-                                       medium_nodes,
-                                       critical_nodes,
-                                       betweenness,
-                                       reference_betweenness)
-            end
-        end
-        # Atualiza a matriz
-        for r = 1:removable
-            for i = edg_valid_removals[r]
-                for j = findall(noncritical_nodes[:, r] .!= 0)
-                    noncritical_matrix[i, j] += 1
-                end
-                for j = findall(medium_nodes[:, r] .!= 0)
-                    medium_matrix[i, j] += 1
-                end
-                for j = findall(critical_nodes[:, r] .!= 0)
-                    critical_matrix[i, j] += 1
-                end
-            end
-        end
-		adjacencies = 0
-		final_adjacencies = 0
-		betweenness = 0
-		noncritical_nodes = 0
-		medium_nodes = 0
-		critical_nodes = 0
-        @everywhere GC.gc(true)
-    end
-
-    # Escreve os resultados em arquivos
-    dir = string("exaustivo_", filename)
-    if !isdir(dir)
-        mkdir(dir)
-    end
-    cd(dir)
-    f = open("noncritical_matrix.txt", "w")
-    for l = 1:m
-        for c = 1:n
-            write(f, string(noncritical_matrix[l, c], ","))
-        end
-        write(f, "\n")
-    end
-    close(f)
-    f = open("medium_matrix.txt", "w")
-    for l = 1:m
-        for c = 1:n
-            write(f, string(medium_matrix[l, c], ","))
-        end
-        write(f, "\n")
-    end
-    close(f)
-    f = open("critical_matrix.txt", "w")
-    for l = 1:m
-        for c = 1:n
-            write(f, string(critical_matrix[l, c], ","))
-        end
-        write(f, "\n")
-    end
-    close(f)
-    f = open("edges.txt", "w")
-    for e in edgs
-        write(f, string(e[1], ",", e[2], "\n"))
-    end
-    close(f)
-    return "Sucesso!"
-end
-
-
-"""
 iteracao_cfb(g)
 
 Realiza uma procura pela aresta única cuja remoção promove a
@@ -986,7 +740,7 @@ function iteracao_cfb(g::Graph)
     betweenness = SharedArray{Float64}(n, removable)
     # Passagem das matrizes de adjacência válidas
     counter = 1
-    for e = 1:removable
+    for e = 1:m
         if tuples_to_remove_temp[e]
             final_adjacencies[:, :, counter] = adjacencies_temp[:, :, e]
             counter += 1
@@ -1010,7 +764,49 @@ function iteracao_cfb(g::Graph)
             most_critical_edge_idx  = e
         end
     end
-    return valid_edgs[most_critical_edge_idx], most_critical, betweenness_changes
+    return valid_edgs[most_critical_edge_idx]
 end
+
+
+"""
+cfb_guloso(g, N)
+
+Calcula a métrica para uma grafo `g`,
+tomando remoções de `N` arestas por vez.
+Foi definida pensando em redes grandes,
+então possui parâmetros internos para limitar a
+alocação de memória e realizar em loops o que
+não for possível de ser realizado simultâneamente.
+Sua implementação envolve o uso de funções
+de computação paralela, mas a função não lida com a
+criação de processos. Estes devem ser iniciados previamente.
+
+### Parâmetros opcionais
+- `filename="current_flow"`: Parte do nome do arquivo `.txt`
+que irá receber as informações finais.
+"""
+function cfb_guloso(g::Graph,
+                    N::Int64,
+                    filename="result")
+    # Vetor para guardar as arestas
+    edges = zeros(UInt16, N, 2)
+    grafo = g
+    for i = 1:N
+        most_critical = iteracao_cfb(grafo)
+        edges[i, :] = most_critical
+        r = rem_edge!(grafo, most_critical[1], most_critical[2])
+    end
+    dir = string("guloso_", filename)
+    if !isdir(dir)
+        mkdir(dir)
+    end
+    cd(dir)
+    f = open("edges.txt", "w")
+    for i = 1:N
+        write(f, string(edges[i, 1], ",", edges[i, 2], "\n"))
+    end
+    close(f)
+end
+
 
 end
