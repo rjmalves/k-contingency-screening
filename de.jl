@@ -1,5 +1,4 @@
-using Distributed, LightGraphs, GraphIO, Printf
-using SharedArrays, IterTools, Combinatorics, ArgParse
+using LightGraphs, GraphIO, ArgParse, BenchmarkTools
 
 
 function parse_commandline()
@@ -9,13 +8,17 @@ function parse_commandline()
            help = "Número de iterações para execução do DE"
            arg_type = Int
            default = 10
+        "--beta_min"
+           help = "Valor mínimo do parâmetro de mutação"
+           arg_type = Float64
+           default = 0.2
+        "--beta_max"
+           help = "Valor máximo do parâmetro de mutação"
+           arg_type = Float64
+           default = 0.8
         "grafo"
             help = "Arquivo com o grafo em lista de arestas"
             arg_type = String
-            required = true
-        "nprocs"
-            help = "Número de processos paralelos"
-            arg_type = Int
             required = true
         "k"
             help = "Número de arestas removidas simultâneamente"
@@ -41,9 +44,10 @@ for (arg, val) in args
 end
 
 ARQ = args["grafo"]
-NPROCS = args["nprocs"]
 K = args["k"]
 iter_num = args["iter_num"]
+beta_min = args["beta_min"]
+beta_max = args["beta_max"]
 pop = args["pop"]
 crossover = args["crossover"]
 
@@ -54,4 +58,4 @@ addprocs(NPROCS)
 @everywhere using Main.CFB
 
 g = Graph(loadgraph(ARQ, NOME, EdgeListFormat()))
-cfb_de(g, K, pop, crossover, iter_num)
+cfb_de($g, $K, $pop, $crossover, $beta_min, $beta_max, $iter_num, $NOME)

@@ -1,5 +1,4 @@
-using Distributed, LightGraphs, GraphIO, Printf
-using SharedArrays, IterTools, Combinatorics, ArgParse
+using LightGraphs, GraphIO, ArgParse, BenchmarkTools
 
 
 function parse_commandline()
@@ -33,4 +32,4 @@ include("cfb.jl")
 using Main.CFB
 
 g = Graph(loadgraph(ARQ, NOME, EdgeListFormat()))
-cfb_guloso(g, K, NOME)
+@btime cfb_guloso($g, $K, $NOME)

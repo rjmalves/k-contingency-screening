@@ -11,7 +11,8 @@ dependencies = [
     "IterTools",
     "ArgParse",
     "StatsBase",
-    "GraphPlot"
+    "GraphPlot",
+    "BenchmarkTools"
 ]
 
 Pkg.add(dependencies)
