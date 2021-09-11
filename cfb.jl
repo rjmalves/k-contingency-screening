@@ -147,14 +147,11 @@ function define_critical_nodes!(noncritical_nodes::SharedArray,
     f_idx = calc_range[2]
     # Descobre o número de nós
     n = length(reference_betweenness)
-    # Para o intervalo de remoções recebido pelo processo
+    # Para o intervalo de remoções recebido pelo processo,
+    # armazena os deltas da betweenness
     for idx = i_idx:f_idx
         # Resíduo da betweenness
         temp_array = abs.(betweenness[:, idx] - reference_betweenness)
-        # Subtrai do mínimo
-        temp_array = temp_array .- minimum(temp_array)
-        # Normaliza para uma escala de 0 a 1
-        temp_array = temp_array ./ maximum(temp_array)
         # Armazena a betwenness normalizada
         betweenness[:, idx] = temp_array
         for j = 1:n # Para cada nó
@@ -170,6 +167,16 @@ function define_critical_nodes!(noncritical_nodes::SharedArray,
                 medium_nodes[j, idx] = 1
             end
         end
+    end
+    # Normaliza as betweenness por barra, considerando todas as remoções
+    n, rem = size(betweenness)
+    for bar = 1:rem
+        temp_array = betweenness[bar, :]
+        # Subtrai do mínimo
+        temp_array = temp_array .- minimum(temp_array)
+        # Normaliza para uma escala de 0 a 1
+        temp_array = temp_array ./ maximum(temp_array)
+        betweeness[bar, :] = temp_array
     end
 end
 
