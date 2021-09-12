@@ -174,12 +174,13 @@ function normalized_deltas_local(betweenness::Matrix{Float64})
     return normalized
 end
 
-function export_results(edges::Matrix{Float64},
+function export_results(edges::Matrix{Integer},
                         globals::Matrix{Float64},
                         disconnects::Matrix{Integer},
+                        k::Integer,
                         filename::String,
                         metodo::String)
-    dir = string(metodo, "_", filename)
+    dir = string(metodo, "_", filename, "_", string(k))
     dir_bkp = pwd()
     if !isdir(dir)
         mkdir(dir)
@@ -225,11 +226,8 @@ function cfb_exaustivo(g::Graph, k::Integer, arquivo_saida="result"::String)
     # 7 - Para cada barra, realiza a soma dos deltas e normaliza
     #     para o intervalo 0 - 1 (impacto global)
     global_norms = normalized_deltas_global(deltas)
-    # 8 - Considerando todos os deltas de todas as barras,
-    #     normaliza para o intervalo 0 - 1 (impacto local)
-    local_norms = normalized_deltas_local(deltas)
-    # 9 - Escreve em arquivo de texto a matriz de deltas
-    export_results(ve, global_norms, ive, arquivo_saida, "exaustivo")
+    # 8 - Escreve em arquivo de texto a matriz de deltas
+    export_results(ve, global_norms, ive, k, arquivo_saida, "exaustivo")
 end
 
 function sample_initial_pop(m::Integer,
@@ -361,7 +359,7 @@ function cfb_de(g::Graph,
                                                   beta_max,
                                                   true)
     # Escreve em arquivo de texto a matriz de deltas
-    export_results(local_norms, global_norms, ive, arquivo_saida, "de")
+    export_de_results(ve, local_norms, global_norms, ive, k, arquivo_saida, "de")
 end
 
 function iteracao_cfb_guloso(g::Graph)

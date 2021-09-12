@@ -32,4 +32,4 @@ include("cfb.jl")
 using Main.CFB
 
 g = Graph(loadgraph(ARQ, NOME, EdgeListFormat()))
-@btime cfb_exaustivo($g, $K, $NOME)
+@btime cfb_exaustivo(g, K, NOME)
