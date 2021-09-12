@@ -152,43 +152,92 @@ function deltas_global(betweenness::Matrix{Float64})
     return abs.(sum(betweenness, dims=1))
 end
 
-function normalized_deltas_global(betweenness::Matrix{Float64})
+function normalized_deltas_global_by_vertex(betweenness::Matrix{Float64})
     n_subsets, n = size(betweenness)
     global_deltas = sum(betweenness, dims=1)
     removal_bets = abs.(global_deltas)
     removal_bets = removal_bets .- minimum(removal_bets)
     removal_bets = removal_bets ./ maximum(removal_bets)
-    normalized = removal_bets
+    normalized = vec(removal_bets)
     return normalized
+end
+
+function normalized_deltas_global_by_edge(betweenness::Matrix{Float64},
+                                          edges::Matrix{Integer},
+                                          tuples::Matrix{Integer})
+    n_subsets, n = size(betweenness)
+    _, k = size(tuples)
+    m, _ = size(edges)
+    k = Int64(k / 2)
+    deltas_by_tuple = sum(betweenness, dims=2)
+    deltas_by_tuple = abs.(deltas_by_tuple)
+    deltas_by_edge = zeros(Float64, m)
+    # Makes a map between the edge vertex pair and the index
+    d = Dict([0,0]=>0)
+    for i = 1:m
+        d[edges[i, :]] = i
+    end
+    for i = 1:n_subsets
+        for j = 1:k
+            edg = [tuples[i, 2 * j - 1], tuples[i, 2 * j] ]
+            idx = d[edg]
+            deltas_by_edge[idx] += deltas_by_tuple[i]
+        end
+    end
+    deltas_by_edge = deltas_by_edge .- minimum(deltas_by_edge)
+    deltas_by_edge = deltas_by_edge ./ maximum(deltas_by_edge)
+    return vec(deltas_by_edge)
 end
 
 function normalized_deltas_local(betweenness::Matrix{Float64})
     n_subsets, n = size(betweenness)
-    normalized = zeros(Float64, n_subsets, n)
-    for i = 1:n_subsets
-        removal_bets = abs.(betweenness[i, :])
-        removal_bets = removal_bets .- minimum(removal_bets)
-        removal_bets = removal_bets ./ maximum(removal_bets)
-        normalized[i, :] = removal_bets
-    end
-    return normalized
+    normalized = abs.(sum(betweenness, dims=2))
+    normalized = normalized .- minimum(normalized)
+    normalized = normalized ./ maximum(normalized)
+    return vec(normalized)
 end
 
-function export_results(edges::Matrix{Integer},
-                        globals::Matrix{Float64},
-                        disconnects::Matrix{Integer},
-                        k::Integer,
-                        filename::String,
-                        metodo::String)
+function export_exaustive_results(valid_tuples::Matrix{Integer},
+                                  globals::Vector{Float64},
+                                  edge_globals::Vector{Float64},
+                                  locals::Vector{Float64},
+                                  disconnects::Matrix{Integer},
+                                  k::Integer,
+                                  filename::String,
+                                  metodo::String)
     dir = string(metodo, "_", filename, "_", string(k))
     dir_bkp = pwd()
     if !isdir(dir)
         mkdir(dir)
     end
     cd(dir)
-    CSV.write("edges.csv", Tables.table(edges), writeheader=false)
+    CSV.write("valid_tuples.csv", Tables.table(valid_tuples), writeheader=false)
     CSV.write("disconnects.csv", Tables.table(disconnects), writeheader=false)
-    CSV.write("global_deltas.csv", Tables.table(globals), writeheader=false)
+    CSV.write("local_deltas.csv", Tables.table(locals), writeheader=false)
+    CSV.write("vertex_global_deltas.csv", Tables.table(globals), writeheader=false)
+    CSV.write("edge_global_deltas.csv", Tables.table(edge_globals), writeheader=false)
+    cd(dir_bkp)
+end
+
+function export_de_results(valid_tuples::Matrix{Integer},
+                           globals::Vector{Float64},
+                           edge_globals::Vector{Float64},
+                           locals::Vector{Float64},
+                           disconnects::Matrix{Integer},
+                           k::Integer,
+                           filename::String,
+                           metodo::String)
+    dir = string(metodo, "_", filename, "_", string(k))
+    dir_bkp = pwd()
+    if !isdir(dir)
+        mkdir(dir)
+    end
+    cd(dir)
+    CSV.write("valid_tuples.csv", Tables.table(valid_tuples), writeheader=false)
+    CSV.write("disconnects.csv", Tables.table(disconnects), writeheader=false)
+    CSV.write("local_deltas.csv", Tables.table(locals), writeheader=false)
+    CSV.write("vertex_global_deltas.csv", Tables.table(globals), writeheader=false)
+    CSV.write("edge_global_deltas.csv", Tables.table(edge_globals), writeheader=false)
     cd(dir_bkp)
 end
 
@@ -212,6 +261,7 @@ function cfb_exaustivo(g::Graph, k::Integer, arquivo_saida="result"::String)
     # 2 - Obtém as tuplas de k arestas
     n = nv(g)
     m = ne(g)
+    edgs = edges_k_tuples(g, edge_indices_k_tuples(m, 1))
     s = edge_indices_k_tuples(m, k)
     e = edges_k_tuples(g, s)
     # 3 - Verifica quais remoções desconectam o grafo - salva como
@@ -225,9 +275,12 @@ function cfb_exaustivo(g::Graph, k::Integer, arquivo_saida="result"::String)
     deltas = betweenness_deltas(bets, ref_cfb)
     # 7 - Para cada barra, realiza a soma dos deltas e normaliza
     #     para o intervalo 0 - 1 (impacto global)
-    global_norms = normalized_deltas_global(deltas)
+    global_norms = normalized_deltas_global_by_vertex(deltas)
+    global_edge_norms = normalized_deltas_global_by_edge(deltas, edgs, ve)
+    local_norms = normalized_deltas_local(deltas)
     # 8 - Escreve em arquivo de texto a matriz de deltas
-    export_results(ve, global_norms, ive, k, arquivo_saida, "exaustivo")
+    export_exaustive_results(ve, global_norms, global_edge_norms,
+                             local_norms, ive, k, arquivo_saida, "exaustivo")
 end
 
 function sample_initial_pop(m::Integer,
@@ -291,6 +344,7 @@ function de_iter!(g::Graph,
                   )
     m = ne(g)
     # 1 - Extrai as tuplas de k arestas
+    edgs = edges_k_tuples(g, edge_indices_k_tuples(m, 1))
     e = edges_k_tuples(g, pop_indices)
     # 2 - Filtra as tuplas que não desconectam o grafo
     v = check_valid_removals(g, e)
@@ -324,12 +378,14 @@ function de_iter!(g::Graph,
                                          crossover_rate)
         # 10 - Atualiza a População
         pop_indices = pop_indices_cross
+        pop_indices[1, :] = best_edg
         return nothing, nothing, nothing, nothing
     else
         # Calcula os deltas da população final
-        global_norms = normalized_deltas_global(deltas)
+        global_norms = normalized_deltas_global_by_vertex(deltas)
+        global_edge_norms = normalized_deltas_global_by_edge(deltas, edgs, ve)
         local_norms = normalized_deltas_local(deltas)
-        return ve, ive, global_norms, local_norms
+        return ve, ive, global_norms, global_edge_norms, local_norms
     end
 end
 
@@ -351,15 +407,16 @@ function cfb_de(g::Graph,
                  crossover_rate, beta_min, beta_max)
     end
     # A última retorna os impactos normalizados da população
-    ve, ive, global_norms, local_norms = de_iter!(g,
-                                                  edge_index_pop,
-                                                  ref_cfb,
-                                                  crossover_rate,
-                                                  beta_min,
-                                                  beta_max,
-                                                  true)
+    ve, ive, global_norms, edge_norms, local_norms = de_iter!(g,
+                                                              edge_index_pop,
+                                                              ref_cfb,
+                                                              crossover_rate,
+                                                              beta_min,
+                                                              beta_max,
+                                                              true)
     # Escreve em arquivo de texto a matriz de deltas
-    export_de_results(ve, local_norms, global_norms, ive, k, arquivo_saida, "de")
+    export_de_results(ve, global_norms, edge_norms,
+                      local_norms, ive, k, arquivo_saida, "de")
 end
 
 function iteracao_cfb_guloso(g::Graph)
