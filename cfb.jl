@@ -346,8 +346,14 @@ function de_iter!(g::Graph,
     # 1 - Extrai as tuplas de k arestas
     edgs = edges_k_tuples(g, edge_indices_k_tuples(m, 1))
     e = edges_k_tuples(g, pop_indices)
+    n_pop, k = size(pop_indices)
     # 2 - Filtra as tuplas que não desconectam o grafo
     v = check_valid_removals(g, e)
+    while sum(v) == 0
+        pop_indices = sample_initial_pop(m, n_pop, k)
+        e = edges_k_tuples(g, pop_indices)
+        v = check_valid_removals(g, e)
+    end
     ve = filter_valid_removals(e, v)
     ive = filter_invalid_removals(e, v)
     # 3 - Calcula as betweenness das remoções válidas

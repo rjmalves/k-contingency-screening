@@ -52,10 +52,9 @@ pop = args["pop"]
 crossover = args["crossover"]
 
 NOME = string(split(ARQ, ".")[1])
-addprocs(NPROCS)
 
-@everywhere include("cfb.jl")
-@everywhere using Main.CFB
+include("cfb.jl")
+using Main.CFB
 
 g = Graph(loadgraph(ARQ, NOME, EdgeListFormat()))
-cfb_de($g, $K, $pop, $crossover, $beta_min, $beta_max, $iter_num, $NOME)
+@btime cfb_de(g, K, pop, crossover, beta_min, beta_max, iter_num, NOME)
