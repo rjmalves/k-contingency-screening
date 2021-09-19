@@ -3,6 +3,7 @@ module CFB
 using LightGraphs: Graph, nv, ne, adjacency_matrix
 using LightGraphs: incidence_matrix, loadgraph, edges, src, dst
 using LightGraphs: rem_edge!, is_connected
+using LightGraphs: betweenness_centrality, closeness_centrality
 using GraphIO: EdgeListFormat
 using LinearAlgebra: transpose, diagm, inv
 using IterTools: subsets
@@ -59,6 +60,10 @@ function current_flow_betweenness(g::Graph)
     betweenness .*= 2 / n_b
     return betweenness
 end
+
+# function current_flow_betweenness(g::Graph)
+#     return betweenness_centrality(g)
+# end
 
 function edge_indices_k_tuples(m::Integer, k::Integer)
     subs = subsets(1:m, k)
