@@ -1,8 +1,8 @@
 module CFB
 
 using LightGraphs: Graph, nv, ne, adjacency_matrix
-using LightGraphs: incidence_matrix, loadgraph, edges, src, dst
-using LightGraphs: rem_edge!, is_connected
+using LightGraphs: incidence_matrix, loadgraph, savegraph
+using LightGraphs: rem_edge!, is_connected, edges, src, dst
 using LightGraphs: betweenness_centrality, closeness_centrality
 using GraphIO: EdgeListFormat
 using LinearAlgebra: transpose, diagm, inv
@@ -153,8 +153,8 @@ function betweenness_deltas(betweenness::Matrix{Float64},
     return deltas
 end
 
-function deltas_global(betweenness::Matrix{Float64})
-    return abs.(sum(betweenness, dims=1))
+function deltas_global_by_removal(betweenness::Matrix{Float64})
+    return abs.(sum(betweenness, dims=2))
 end
 
 function normalized_deltas_global_by_vertex(betweenness::Matrix{Float64})
@@ -246,7 +246,8 @@ function export_de_results(valid_tuples::Matrix{Integer},
     cd(dir_bkp)
 end
 
-function export_greedy_results(edges::Matrix{Integer},
+function export_greedy_results(g::Graph,
+                               edges::Matrix{Integer},
                                deltas::Vector{Float64},
                                filename::String)
     dir = string("guloso", "_", filename)
@@ -255,6 +256,7 @@ function export_greedy_results(edges::Matrix{Integer},
         mkdir(dir)
     end
     cd(dir)
+    savegraph("edgelist.csv", g, EdgeListFormat())
     CSV.write("edges.csv", Tables.table(edges), writeheader=false)
     CSV.write("global_deltas.csv", Tables.table(deltas), writeheader=false)
     cd(dir_bkp)
@@ -450,9 +452,9 @@ function iteracao_cfb_guloso(g::Graph)
     deltas = betweenness_deltas(bets, ref_cfb)
     # 7 - Para cada barra, realiza a soma dos deltas e normaliza
     #     para o intervalo 0 - 1 (impacto global)
-    global_deltas = deltas_global(deltas)
+    global_deltas = deltas_global_by_removal(deltas)
     max_delta, idx = findmax(vec(global_deltas))
-    return e[ve[idx], :], max_delta
+    return ve[idx, :], max_delta
 end
 
 function cfb_guloso(g::Graph,
@@ -463,11 +465,12 @@ function cfb_guloso(g::Graph,
     deltas = zeros(Float64, k)
     for i = 1:k
         edg, delta = iteracao_cfb_guloso(g_bkp)
+        nodelabel = 1:nv(g_bkp)
         edges[i, :] = edg
         deltas[i] = delta
         rem_edge!(g_bkp, edg[1], edg[2])
     end
-    export_greedy_results(edges, deltas, arquivo_saida)
+    export_greedy_results(g, edges, deltas, arquivo_saida)
 end
 
 end

@@ -32,4 +32,7 @@ include("cfb.jl")
 using Main.CFB
 
 g = Graph(loadgraph(ARQ, NOME, EdgeListFormat()))
-@btime cfb_guloso($g, $K, $NOME)
+savegraph(string("edgelist-", ARQ),
+          g,
+          EdgeListFormat())
+@btime cfb_guloso(g, K, NOME)
