@@ -31,11 +31,11 @@ using Main.CFB
 
 using GraphPlot
 
-for ARQ in ["t11.txt", "t39.txt", "t57.txt", "ieee118.txt"]
-    for K in [1, 2, 3, 4]
+for ARQ in ["ieee118.txt"]
+    for K in [2, 3, 4]
         println(ARQ, " ", K)
         NOME = string(split(ARQ, ".")[1])
         g = Graph(loadgraph(ARQ, NOME, EdgeListFormat()))
-        cfb_exaustivo(g, K, NOME)
+        @btime cfb_exaustivo($g, $K, $NOME)
     end
 end

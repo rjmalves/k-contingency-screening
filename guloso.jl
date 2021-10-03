@@ -35,6 +35,6 @@ for ARQ in ["t11.txt", "t39.txt", "t57.txt", "ieee118.txt"]
         println(ARQ, " ", K)
         NOME = string(split(ARQ, ".")[1])
         g = Graph(loadgraph(ARQ, NOME, EdgeListFormat()))
-        cfb_guloso(g, K, NOME)
+        @btime cfb_guloso($g, $K, $NOME)
     end
 end

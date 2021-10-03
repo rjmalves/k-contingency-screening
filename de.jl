@@ -60,10 +60,10 @@ crossover = 0.5
 beta_min = 0.2
 beta_max = 0.8
 iter_num = 10
-for ARQ in ["t11.txt", "t39.txt", "t57.txt", "ieee118.txt"]
+for ARQ in ["ieee118.txt"]
     for K in [1, 2, 3, 4]
         NOME = string(split(ARQ, ".")[1])
         g = Graph(loadgraph(ARQ, NOME, EdgeListFormat()))
-        cfb_de(g, K, pop, crossover, beta_min, beta_max, iter_num, NOME)
+        @btime cfb_de($g, $K, $pop, $crossover, $beta_min, $beta_max, $iter_num, $NOME)
     end
 end
