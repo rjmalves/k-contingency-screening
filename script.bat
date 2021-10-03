@@ -1,10 +1,4 @@
-julia .\de.jl "t11.txt" 3 100 0.5
-julia .\de.jl "t11.txt" 4 100 0.5
-julia .\de.jl "t39.txt" 1 100 0.5
-julia .\de.jl "t39.txt" 2 100 0.5
-julia .\de.jl "t39.txt" 3 100 0.5
-julia .\de.jl "t39.txt" 4 100 0.5
-julia .\de.jl "t57.txt" 1 100 0.5
-julia .\de.jl "t57.txt" 2 100 0.5
-julia .\de.jl "t57.txt" 3 100 0.5
-julia .\de.jl "t57.txt" 4 100 0.5
+julia .\exaustivo.jl "t11.txt" 1
+julia .\exaustivo.jl "t11.txt" 2
+julia .\exaustivo.jl "t11.txt" 3
+julia .\exaustivo.jl "t11.txt" 4
