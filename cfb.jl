@@ -2,7 +2,8 @@ module CFB
 
 using Graphs: Graph, SimpleGraph, nv, ne, adjacency_matrix
 using Graphs: incidence_matrix, loadgraph, savegraph
-using Graphs: rem_edge!, add_edge!, is_connected, edges, src, dst
+using Graphs: rem_edge!, add_edge!, add_vertices!
+using Graphs: is_connected, edges, src, dst
 using Graphs: betweenness_centrality, closeness_centrality
 using LinearAlgebra: transpose, diagm, inv
 using IterTools: subsets
@@ -11,6 +12,7 @@ using Combinatorics: multinomial
 using CSV, Tables
 using Random: seed!
 
+export read_edgelist
 export cfb_exaustivo
 export cfb_de
 export cfb_guloso
@@ -204,8 +206,8 @@ end
 function normalized_deltas_global_by_vertex(deltas::Matrix{Float64})
     global_deltas = sum(deltas, dims=1)
     removal_bets = abs.(global_deltas)
-    minimo = minimum(removal_bets[removal_bets .> 1e-10])
-    removal_bets = (removal_bets .- minimo) ./ (maximum(removal_bets) - minimo)
+    # minimo = minimum(removal_bets[removal_bets .> 1e-10])
+    # removal_bets = (removal_bets .- minimo) ./ (maximum(removal_bets) - minimo)
     normalized = vec(removal_bets)
     return normalized
 end
@@ -232,16 +234,16 @@ function normalized_deltas_global_by_edge(deltas::Matrix{Float64},
             deltas_by_edge[idx] += deltas_by_tuple[i]
         end
     end
-    deltas_by_edge = deltas_by_edge .- minimum(deltas_by_edge)
-    deltas_by_edge = deltas_by_edge ./ (maximum(deltas_by_edge) - minimum(deltas_by_edge))
+    # deltas_by_edge = deltas_by_edge .- minimum(deltas_by_edge)
+    # deltas_by_edge = deltas_by_edge ./ (maximum(deltas_by_edge) - minimum(deltas_by_edge))
     return vec(deltas_by_edge)
 end
 
 function normalized_deltas_local(deltas::Matrix{Float64})
     n_subsets, n = size(deltas)
     normalized = abs.(sum(deltas, dims=2))
-    normalized = normalized .- minimum(normalized)
-    normalized = normalized ./ maximum(normalized)
+    # normalized = normalized .- minimum(normalized)
+    # normalized = normalized ./ maximum(normalized)
     return vec(normalized)
 end
 
@@ -260,7 +262,6 @@ function export_exaustive_results(g::Graph,
         mkdir(dir)
     end
     cd(dir)
-    savegraph("edgelist.csv", g, EdgeListFormat())
     CSV.write("valid_tuples.csv", Tables.table(valid_tuples), writeheader=false)
     CSV.write("disconnects.csv", Tables.table(disconnects), writeheader=false)
     CSV.write("local_deltas.csv", Tables.table(locals), writeheader=false)
