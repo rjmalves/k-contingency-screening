@@ -1,4 +1,4 @@
-using LightGraphs, GraphIO, ArgParse, BenchmarkTools
+using Graphs, ArgParse, BenchmarkTools
 
 
 function parse_commandline()
@@ -30,5 +30,5 @@ include("cfb.jl")
 using Main.CFB
 
 NOME = string(split(ARQ, ".")[1])
-g = Graph(loadgraph(ARQ, NOME, EdgeListFormat()))
-@btime cfb_guloso(g, K, NOME)
+g = read_edgelist(ARQ)
+cfb_guloso(g, K, NOME)

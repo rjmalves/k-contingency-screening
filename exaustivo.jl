@@ -1,4 +1,4 @@
-using LightGraphs, GraphIO, ArgParse, BenchmarkTools
+using Graphs, ArgParse, BenchmarkTools
 
 
 function parse_commandline()
@@ -32,5 +32,5 @@ using Main.CFB
 
 using GraphPlot
 
-g = Graph(loadgraph(ARQ, NOME, EdgeListFormat()))
-@btime cfb_exaustivo(g, K, NOME)
+g = read_edgelist(ARQ)
+cfb_exaustivo(g, K, NOME)

@@ -1,10 +1,9 @@
 module CFB
 
-using LightGraphs: Graph, nv, ne, adjacency_matrix
-using LightGraphs: incidence_matrix, loadgraph, savegraph
-using LightGraphs: rem_edge!, is_connected, edges, src, dst
-using LightGraphs: betweenness_centrality, closeness_centrality
-using GraphIO: EdgeListFormat
+using Graphs: Graph, SimpleGraph, nv, ne, adjacency_matrix
+using Graphs: incidence_matrix, loadgraph, savegraph
+using Graphs: rem_edge!, add_edge!, is_connected, edges, src, dst
+using Graphs: betweenness_centrality, closeness_centrality
 using LinearAlgebra: transpose, diagm, inv
 using IterTools: subsets
 using StatsBase: sample, sortperm
@@ -19,6 +18,50 @@ export current_flow_betweenness
 
 # Parâmetros: grafo, k
 seed!(2021)
+
+
+function read_edgelist(s::String)
+    f = open(s, "r")
+
+    g = SimpleGraph(Int64)
+
+    nodes = Set([])
+    edges = Set([])
+
+    while !eof(f)
+        line = readline(f)
+        if contains(line, " ")
+            char = " "
+        elseif contains(line, "\t")
+            char = "\t"
+        end
+        src = -1
+        dst = -1
+        for node = split(line, char)
+            if length(node) == 0
+                continue
+            end
+            n = strip(node)
+            if src == -1
+                src = parse(Int64, n)
+            else
+                dst = parse(Int64, n)
+            end
+        end
+        push!(nodes, src)
+        push!(nodes, dst)
+        push!(edges, [src, dst])
+    end
+    close(f)
+
+    add_vertices!(g, length(nodes))
+    for e = edges
+        add_edge!(g, e[1], e[2])
+    end
+
+   return g
+end
+
 
 function current_flow_betweenness(g::Graph)
     # Calcula a current flow betweenness segundo o algoritmo de Brandes
@@ -420,6 +463,7 @@ function cfb_de(g::Graph,
     m = ne(g)
     edge_index_pop = sample_initial_pop(m, pop_size, k)
     for i = 1:iter_num-1
+        println(i)
         de_iter!(g, edge_index_pop, ref_cfb,
                  crossover_rate, beta_min, beta_max)
     end
