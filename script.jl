@@ -1,12 +1,33 @@
 include("cfb.jl")
 using Main.CFB, BenchmarkTools
 
+println("------ itaipu11 -------")
+g = read_edgelist("itaipu11.txt")
+@time cfb_exaustivo(g, 1, "itaipu11")
+@time cfb_exaustivo(g, 2, "itaipu11")
+@time cfb_exaustivo(g, 3, "itaipu11")
+@time cfb_exaustivo(g, 4, "itaipu11")
+
+println("------ ieee39 -------")
+g = read_edgelist("ieee39.txt")
+@time cfb_exaustivo(g, 1, "ieee39")
+@time cfb_exaustivo(g, 2, "ieee39")
+@time cfb_exaustivo(g, 3, "ieee39")
+@time cfb_exaustivo(g, 4, "ieee39")
+
+println("------ ieee57 -------")
+g = read_edgelist("ieee57.txt")
+@time cfb_exaustivo(g, 1, "ieee57")
+@time cfb_exaustivo(g, 2, "ieee57")
+@time cfb_exaustivo(g, 3, "ieee57")
+@time cfb_exaustivo(g, 4, "ieee57")
+
 println("------ ieee118 -------")
 g = read_edgelist("ieee118.txt")
 @time cfb_exaustivo(g, 1, "ieee118")
-# @time cfb_exaustivo(g, 2, "ieee118")
-# @time cfb_exaustivo(g, 3, "ieee118")
-# @time cfb_exaustivo(g, 4, "ieee118")
+@time cfb_exaustivo(g, 2, "ieee118")
+@time cfb_exaustivo(g, 3, "ieee118")
+@time cfb_exaustivo(g, 4, "ieee118")
 
 # println("------ t300 -------")
 # g = read_edgelist("t300.txt")
