@@ -17,15 +17,20 @@ function parse_commandline()
     return parse_args(s)
 end
 
-# Echo das entradas
-args = parse_commandline()
-for (arg, val) in args
-    println("$arg  =>  $val")
-end
+# # Echo das entradas
+# args = parse_commandline()
+# for (arg, val) in args
+#     println("$arg  =>  $val")
+# end
 
-ARQ = args["grafo"]
-K = args["k"]
+# ARQ = args["grafo"]
+# K = args["k"]
+# NOME = string(split(ARQ, ".")[1])
+
+ARQ = "t39.txt"
+K = 1
 NOME = string(split(ARQ, ".")[1])
+
 
 include("cfb.jl")
 using Main.CFB

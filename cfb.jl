@@ -9,7 +9,7 @@ using LinearAlgebra: transpose, diagm, inv
 using IterTools: subsets
 using StatsBase: sample, sortperm
 using Combinatorics: multinomial
-using CSV, Tables
+using CSV, DataFrames, Tables
 using Random: seed!
 
 export read_edgelist
@@ -209,7 +209,7 @@ function normalized_deltas_global_by_vertex(deltas::Matrix{Float64})
     # minimo = minimum(removal_bets[removal_bets .> 1e-10])
     # removal_bets = (removal_bets .- minimo) ./ (maximum(removal_bets) - minimo)
     normalized = vec(removal_bets)
-    return normalized
+    return DataFrame(V=1:length(normalized), DELTA=normalized)
 end
 
 function normalized_deltas_global_by_edge(deltas::Matrix{Float64},
@@ -236,7 +236,8 @@ function normalized_deltas_global_by_edge(deltas::Matrix{Float64},
     end
     # deltas_by_edge = deltas_by_edge .- minimum(deltas_by_edge)
     # deltas_by_edge = deltas_by_edge ./ (maximum(deltas_by_edge) - minimum(deltas_by_edge))
-    return vec(deltas_by_edge)
+    df = DataFrame(SRC=edges[:, 1], DST=edges[:, 2], DELTA=vec(deltas_by_edge))
+    return df
 end
 
 function normalized_deltas_local(deltas::Matrix{Float64})
@@ -249,8 +250,8 @@ end
 
 function export_exaustive_results(g::Graph,
                                   valid_tuples::Matrix{Integer},
-                                  globals::Vector{Float64},
-                                  edge_globals::Vector{Float64},
+                                  globals::DataFrame,
+                                  edge_globals::DataFrame,
                                   locals::Vector{Float64},
                                   disconnects::Matrix{Integer},
                                   k::Integer,
@@ -265,8 +266,8 @@ function export_exaustive_results(g::Graph,
     CSV.write("valid_tuples.csv", Tables.table(valid_tuples), writeheader=false)
     CSV.write("disconnects.csv", Tables.table(disconnects), writeheader=false)
     CSV.write("local_deltas.csv", Tables.table(locals), writeheader=false)
-    CSV.write("vertex_global_deltas.csv", Tables.table(globals), writeheader=false)
-    CSV.write("edge_global_deltas.csv", Tables.table(edge_globals), writeheader=false)
+    CSV.write("vertex_global_deltas.csv", globals, writeheader=false)
+    CSV.write("edge_global_deltas.csv", edge_globals, writeheader=false)
     cd(dir_bkp)
 end
 
@@ -464,7 +465,6 @@ function cfb_de(g::Graph,
     m = ne(g)
     edge_index_pop = sample_initial_pop(m, pop_size, k)
     for i = 1:iter_num-1
-        println(i)
         de_iter!(g, edge_index_pop, ref_cfb,
                  crossover_rate, beta_min, beta_max)
     end
