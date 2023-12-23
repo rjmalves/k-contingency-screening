@@ -1,6 +1,43 @@
 # k-contingency-screening
-Code for analyzing multiple contingencies in Power Systems by graph theory in Julia.
 
+Código para análise topológica de contingências múltiplas em grafos simples que modelam sistemas de potência, utilizando a Current-Flow Betweenness Centrality.
+
+
+## Configuração e Visão Geral
+
+O repositório consiste em em três variantes principais de métodos para realizar a mesma análise: análise e ordenação e contingências modeladas como remoção de arestas em grafos.
+
+São implementados os métodos:
+
+- Exaustivo
+- Guloso
+- Evolução Diferencial (DE)
+
+As funcionalidades são ilustradas no arquivo `script.jl`, que pode ser livremente modificado.
+
+Uma vez clonado o repositório na máquina local e possuindo uma instalação de Julia (recomendado > 1.9), a configuração do ambiente pode ser feita através de:
+
+```
+$ cd <caminho_do_repositorio>
+$ julia
+$ ]
+$ activate .
+$ instantiate
+```
+
+O comando `]` é utilizado para entrar no modo de gerenciamento de pacotes de Julia. Mais informações podem ser encontradas em https://docs.julialang.org/en/v1/stdlib/Pkg/ .
+
+Dentro da própria sessão interativa de julia, estando no ambiente em que foram instaladas as dependências (basta conferir o que aparece entre parênteses na linha do terminal quando se digita `]`), o conteúdo do script pode ser executado com:
+
+```
+$ include("script.jl")
+```
+
+Para executar diretamente do terminal, fora de uma sessão interativa de Julia, basta fazer, estando dentro do diretório em que foi clonado o repositório:
+
+```
+julia --project script.jl
+```
 
 ## Documentação dos Resultados
 
@@ -26,5 +63,3 @@ Contém o impacto global nos vértices causado pela remoção das tuplas. Este i
 ### edge_global_deltas.csv
 
 Contém o impacto global nas arestas, causado pela remoção das tuplas. Este impacto é calculado, para cada aresta `e`, através da soma dos impactos locais (antes de normalizá-los), presentes no arquivo `local_deltas.csv` em todas as tuplas nas quais a aresta `e` está presente. A linha `i` contém o impacto global da remoção da aresta definida na linha `i` no arquivo de lista de arestas do grafo.
-
-

@@ -61,7 +61,7 @@ function read_edgelist(s::String)
         add_edge!(g, e[1], e[2])
     end
 
-   return g
+    return g
 end
 
 
@@ -80,9 +80,9 @@ function current_flow_betweenness(g::Graph)
     # e preenchendo com zeros
     L = diagm(0 => reduce(+, A, dims=[1])[1:n]) - A
     L_tilde = L[2:n, 2:n]
-    C = vcat(zeros(1, n), hcat(zeros(n-1, 1), inv(L_tilde)))
+    C = vcat(zeros(1, n), hcat(zeros(n - 1, 1), inv(L_tilde)))
     # A matriz de fluxo de Brandes
-    F = b*C
+    F = b * C
     # Iterando na matriz de fluxo (linha a linha)
     for j = 1:m
         # Ordena as entradas da linha em ordem
@@ -107,10 +107,6 @@ function current_flow_betweenness(g::Graph)
     return betweenness
 end
 
-# function current_flow_betweenness(g::Graph)
-#     return betweenness_centrality(g)
-# end
-
 function edge_indices_k_tuples(m::Integer, k::Integer)
     subs = subsets(1:m, k)
     edge_index_matrix = zeros(Integer, length(subs), k)
@@ -127,8 +123,8 @@ function edges_k_tuples(g::Graph, indices::Matrix{Integer})
     for i = 1:n_subsets
         for (j, e) = enumerate(indices[i, :])
             edg = edgs[e]
-            edge_matrix[i, 2 * j - 1] = src(edg)
-            edge_matrix[i, 2 * j] = dst(edg)
+            edge_matrix[i, 2*j-1] = src(edg)
+            edge_matrix[i, 2*j] = dst(edg)
         end
     end
     return edge_matrix
@@ -139,7 +135,7 @@ function edit_graph(g::Graph, edgs::Vector{Integer})
     n_edges = length(edgs)
     n_edges = Int64(n_edges / 2)
     for i = 1:n_edges
-        rem_edge!(g_bkp, edgs[2 * i - 1], edgs[2 * i])
+        rem_edge!(g_bkp, edgs[2*i-1], edgs[2*i])
     end
     return g_bkp
 end
@@ -190,7 +186,7 @@ function betweenness_from_removals(g::Graph, tuples::Matrix{Integer})
 end
 
 function betweenness_deltas(betweenness::Matrix{Float64},
-                            reference::Vector{Float64})
+    reference::Vector{Float64})
     n_subsets, n = size(betweenness)
     deltas = zeros(Float64, n_subsets, n)
     for i = 1:n_subsets
@@ -213,8 +209,8 @@ function normalized_deltas_global_by_vertex(deltas::Matrix{Float64})
 end
 
 function normalized_deltas_global_by_edge(deltas::Matrix{Float64},
-                                          edges::Matrix{Integer},
-                                          tuples::Matrix{Integer})
+    edges::Matrix{Integer},
+    tuples::Matrix{Integer})
     n_subsets, n = size(deltas)
     _, k = size(tuples)
     m, _ = size(edges)
@@ -223,13 +219,13 @@ function normalized_deltas_global_by_edge(deltas::Matrix{Float64},
     deltas_by_tuple = abs.(deltas_by_tuple)
     deltas_by_edge = zeros(Float64, m)
     # Makes a map between the edge vertex pair and the index
-    d = Dict([0,0]=>0)
+    d = Dict([0, 0] => 0)
     for i = 1:m
         d[edges[i, :]] = i
     end
     for i = 1:n_subsets
         for j = 1:k
-            edg = [tuples[i, 2 * j - 1], tuples[i, 2 * j] ]
+            edg = [tuples[i, 2*j-1], tuples[i, 2*j]]
             idx = d[edg]
             deltas_by_edge[idx] += deltas_by_tuple[i]
         end
@@ -249,14 +245,14 @@ function normalized_deltas_local(deltas::Matrix{Float64})
 end
 
 function export_exaustive_results(g::Graph,
-                                  valid_tuples::Matrix{Integer},
-                                  globals::DataFrame,
-                                  edge_globals::DataFrame,
-                                  locals::Vector{Float64},
-                                  disconnects::Matrix{Integer},
-                                  k::Integer,
-                                  filename::String,
-                                  metodo::String)
+    valid_tuples::Matrix{Integer},
+    globals::DataFrame,
+    edge_globals::DataFrame,
+    locals::Vector{Float64},
+    disconnects::Matrix{Integer},
+    k::Integer,
+    filename::String,
+    metodo::String)
     dir = string(metodo, "_", filename, "_", string(k))
     dir_bkp = pwd()
     if !isdir(dir)
@@ -272,14 +268,14 @@ function export_exaustive_results(g::Graph,
 end
 
 function export_de_results(g::Graph,
-                           valid_tuples::Matrix{Integer},
-                           globals::Vector{Float64},
-                           edge_globals::Vector{Float64},
-                           locals::Vector{Float64},
-                           disconnects::Matrix{Integer},
-                           k::Integer,
-                           filename::String,
-                           metodo::String)
+    valid_tuples::Matrix{Integer},
+    globals::Vector{Float64},
+    edge_globals::Vector{Float64},
+    locals::Vector{Float64},
+    disconnects::Matrix{Integer},
+    k::Integer,
+    filename::String,
+    metodo::String)
     dir = string(metodo, "_", filename, "_", string(k))
     dir_bkp = pwd()
     if !isdir(dir)
@@ -296,9 +292,9 @@ function export_de_results(g::Graph,
 end
 
 function export_greedy_results(g::Graph,
-                               edges::Matrix{Integer},
-                               deltas::Vector{Float64},
-                               filename::String)
+    edges::Matrix{Integer},
+    deltas::Vector{Float64},
+    filename::String)
     dir = string("guloso", "_", filename)
     dir_bkp = pwd()
     if !isdir(dir)
@@ -336,16 +332,16 @@ function cfb_exaustivo(g::Graph, k::Integer, arquivo_saida="result"::String)
     local_norms = normalized_deltas_local(deltas)
     # 8 - Escreve em arquivo de texto a matriz de deltas
     export_exaustive_results(g, ve, global_norms, global_edge_norms,
-                             local_norms, ive, k, arquivo_saida, "exaustivo")
+        local_norms, ive, k, arquivo_saida, "exaustivo")
 end
 
 function sample_initial_pop(m::Integer,
-                            n_pop::Integer,
-                            k::Integer)
+    n_pop::Integer,
+    k::Integer)
     indices_pop = zeros(Integer, n_pop, k)
     indices = 1:m
     for i = 1:n_pop
-        indices_pop[i, :] = sample(indices, k, replace=false)    
+        indices_pop[i, :] = sample(indices, k, replace=false)
     end
     return indices_pop
 end
@@ -361,26 +357,26 @@ function de_cost_function(deltas::Matrix{Float64})
 end
 
 function de_mutation(m::Integer,
-                     k::Integer,
-                     pop_size::Integer,
-                     indices_pop::Matrix{Integer},
-                     beta_min=0.2::Float64,
-                     beta_max=0.8::Float64)
+    k::Integer,
+    pop_size::Integer,
+    indices_pop::Matrix{Integer},
+    beta_min=0.2::Float64,
+    beta_max=0.8::Float64)
     coefs = rand(-m:m, pop_size, k)
     beta = rand(pop_size, k) .* (beta_max - beta_min) .+ beta_min
     indices_pop_mut = round.(Integer,
-                             indices_pop .+ (beta .* coefs))
+        indices_pop .+ (beta .* coefs))
     indices_pop_mut = max.(ones(Integer, pop_size, k),
-                           indices_pop_mut)
+        indices_pop_mut)
     indices_pop_mut = min.(m * ones(Integer, pop_size, k),
-                           indices_pop_mut)
+        indices_pop_mut)
     return indices_pop_mut
 end
 
 function de_crossover(pop_size::Integer,
-                      pop_indices::Matrix{Integer},
-                      pop_indices_mut::Matrix{Int64},
-                      crossover_rate=0.5::Float64)
+    pop_indices::Matrix{Integer},
+    pop_indices_mut::Matrix{Int64},
+    crossover_rate=0.5::Float64)
     flags = rand(pop_size, 1) .< crossover_rate
     for c = 1:pop_size
         if flags[c]
@@ -391,13 +387,12 @@ function de_crossover(pop_size::Integer,
 end
 
 function de_iter!(g::Graph,
-                  pop_indices::Matrix{Integer},
-                  ref_bets::Vector{Float64},
-                  crossover_rate::Float64,
-                  beta_min::Float64,
-                  beta_max::Float64,
-                  ultima=false::Bool
-                  )
+    pop_indices::Matrix{Integer},
+    ref_bets::Vector{Float64},
+    crossover_rate::Float64,
+    beta_min::Float64,
+    beta_max::Float64,
+    ultima=false::Bool)
     m = ne(g)
     # 1 - Extrai as tuplas de k arestas
     edgs = edges_k_tuples(g, edge_indices_k_tuples(m, 1))
@@ -428,16 +423,16 @@ function de_iter!(g::Graph,
         best_edg = pop_indices[1, :]
         # 8 - Mutação
         pop_indices_mut = de_mutation(m,
-                                      k,
-                                      pop_size,
-                                      pop_indices,
-                                      beta_min,
-                                      beta_max)
+            k,
+            pop_size,
+            pop_indices,
+            beta_min,
+            beta_max)
         # 9 - Crossover
         pop_indices_cross = de_crossover(pop_size,
-                                         pop_indices,
-                                         pop_indices_mut,
-                                         crossover_rate)
+            pop_indices,
+            pop_indices_mut,
+            crossover_rate)
         # 10 - Atualiza a População
         pop_indices = pop_indices_cross
         pop_indices[1, :] = best_edg
@@ -452,13 +447,13 @@ function de_iter!(g::Graph,
 end
 
 function cfb_de(g::Graph,
-                k::Integer,
-                pop_size::Integer,
-                crossover_rate::Float64,
-                beta_min::Float64,
-                beta_max::Float64,
-                iter_num=10::Integer,
-                arquivo_saida="result"::String)
+    k::Integer,
+    pop_size::Integer,
+    crossover_rate::Float64,
+    beta_min::Float64,
+    beta_max::Float64,
+    iter_num=10::Integer,
+    arquivo_saida="result"::String)
     # 1 - Calcula a betweenness de referência
     ref_cfb = current_flow_betweenness(g)
     # 2 - Obtém as tuplas de índices das k arestas
@@ -466,19 +461,19 @@ function cfb_de(g::Graph,
     edge_index_pop = sample_initial_pop(m, pop_size, k)
     for i = 1:iter_num-1
         de_iter!(g, edge_index_pop, ref_cfb,
-                 crossover_rate, beta_min, beta_max)
+            crossover_rate, beta_min, beta_max)
     end
     # A última retorna os impactos normalizados da população
     ve, ive, global_norms, edge_norms, local_norms = de_iter!(g,
-                                                              edge_index_pop,
-                                                              ref_cfb,
-                                                              crossover_rate,
-                                                              beta_min,
-                                                              beta_max,
-                                                              true)
+        edge_index_pop,
+        ref_cfb,
+        crossover_rate,
+        beta_min,
+        beta_max,
+        true)
     # Escreve em arquivo de texto a matriz de deltas
     export_de_results(g, ve, global_norms, edge_norms,
-                      local_norms, ive, k, arquivo_saida, "de")
+        local_norms, ive, k, arquivo_saida, "de")
 end
 
 function iteracao_cfb_guloso(g::Graph)
@@ -507,8 +502,8 @@ function iteracao_cfb_guloso(g::Graph)
 end
 
 function cfb_guloso(g::Graph,
-                    k::Integer,
-                    arquivo_saida="result"::String)
+    k::Integer,
+    arquivo_saida="result"::String)
     g_bkp = Graph(g)
     edges = zeros(Integer, k, 2)
     deltas = zeros(Float64, k)
