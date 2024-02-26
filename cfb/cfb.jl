@@ -5,6 +5,7 @@ using Graphs: incidence_matrix, loadgraph, savegraph
 using Graphs: rem_edge!, add_edge!, add_vertices!
 using Graphs: is_connected, edges, src, dst
 using Graphs: betweenness_centrality, closeness_centrality
+using GraphIO
 using LinearAlgebra: transpose, diagm, inv
 using IterTools: subsets
 using StatsBase: sample, sortperm
@@ -282,7 +283,7 @@ function export_de_results(g::Graph,
         mkdir(dir)
     end
     cd(dir)
-    savegraph("edgelist.csv", g, EdgeListFormat())
+    # savegraph("edgelist.csv", g, EdgeListFormat())
     CSV.write("valid_tuples.csv", Tables.table(valid_tuples), writeheader=false)
     CSV.write("disconnects.csv", Tables.table(disconnects), writeheader=false)
     CSV.write("local_deltas.csv", Tables.table(locals), writeheader=false)
@@ -301,7 +302,7 @@ function export_greedy_results(g::Graph,
         mkdir(dir)
     end
     cd(dir)
-    savegraph("edgelist.csv", g, EdgeListFormat())
+    # savegraph("edgelist.csv", g, EdgeListFormat())
     CSV.write("edges.csv", Tables.table(edges), writeheader=false)
     CSV.write("global_deltas.csv", Tables.table(deltas), writeheader=false)
     cd(dir_bkp)
